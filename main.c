@@ -39,18 +39,18 @@ int main(int argc, char* argv[]) {
     printf("생성 또는 읽어올 파일명 입력 >>");
     scanf("%s", fileName + strlen(fileName));
     strcat(fileName, ".db");
+    // 파일이 존재
     if (access(fileName, F_OK) != -1) {
         file = fopen(fileName, "a+");
         fseek(file, 0, SEEK_SET);
         create_table(type, file, &type_size);
         while (!feof(file)) {
-            datas = realloc(datas, sizeof(void**) * (data_size+1));
-            datas[data_size] = calloc(data_size+1, sizeof(void*));
+            datas = realloc(datas, sizeof(void**) * (++data_size));
+            datas[data_size-1] = calloc(data_size, sizeof(void*));
             for (int i = 0; i < type_size; ++i) {
                 fscanf(file, "%s", temp);
-                datas[data_size][i] = create_data(type[i], temp);
+                datas[data_size-1][i] = create_data(type[i], temp);
             }
-            data_size++;
         }
     } else {
         file = fopen(fileName, "w");
@@ -81,11 +81,12 @@ int main(int argc, char* argv[]) {
                 fputs("\n", file);
                 datas = realloc(datas, sizeof(void**) * (data_size+1));
                 datas[data_size] = calloc(data_size+1, sizeof(void*));
-                for (int i = 0; i < type_size; ++i) {
+                for (int i = 0; ; ++i) {
                     fscanf(stdin, "%s", temp);
                     fputs(temp, file);
-                    fputs(" ", file);
                     datas[data_size][i] = create_data(type[i], temp);
+                    if (i >= type_size-1) break;
+                    fputs(" ", file);
                 }
                 data_size++;
                 break;
@@ -181,11 +182,10 @@ void create_table(DataType* dataType, FILE* file, int* type_size) {
             fflush(stdin);
         }
         fgets(text, 256, file);
-        text[strlen(text)-1] = '\0';
+        if (text[strlen(text)-1] == '\n') text[strlen(text)-1] = '\0';
         char *stp = strtok(text, " ");
         while (stp != NULL) {
-            size++;
-            dataType = realloc(dataType, sizeof(DataType) * size);
+            dataType = realloc(dataType, sizeof(DataType) * ++size);
             int len = (int) strlen(stp);
             for (int i = 0; i < len; ++i) stp[i] = (char) toupper(stp[i]);
             if (create_data_type(dataType+size-1, stp) && file == stdin) {
@@ -197,6 +197,7 @@ void create_table(DataType* dataType, FILE* file, int* type_size) {
         }
         if (finish_check_in) finish_check = 0;
     }
+
     *type_size = size;
 }
 
